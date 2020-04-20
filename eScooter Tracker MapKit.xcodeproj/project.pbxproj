@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		9855B979244E1D77005547B8 /* AboutViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9855B978244E1D77005547B8 /* AboutViewController.swift */; };
+		9855B97B244E208D005547B8 /* AboutAuthorViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9855B97A244E208D005547B8 /* AboutAuthorViewController.swift */; };
+		9855B97D244E2F7B005547B8 /* PopUpLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9855B97C244E2F7B005547B8 /* PopUpLabel.swift */; };
+		9855B97F244E32A4005547B8 /* QRScanViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9855B97E244E32A4005547B8 /* QRScanViewController.swift */; };
 		98CAAE51244DEC3A00718BA6 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98CAAE50244DEC3A00718BA6 /* AppDelegate.swift */; };
 		98CAAE53244DEC3A00718BA6 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98CAAE52244DEC3A00718BA6 /* SceneDelegate.swift */; };
 		98CAAE55244DEC3A00718BA6 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98CAAE54244DEC3A00718BA6 /* ViewController.swift */; };
@@ -16,6 +20,10 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		9855B978244E1D77005547B8 /* AboutViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutViewController.swift; sourceTree = "<group>"; };
+		9855B97A244E208D005547B8 /* AboutAuthorViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutAuthorViewController.swift; sourceTree = "<group>"; };
+		9855B97C244E2F7B005547B8 /* PopUpLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopUpLabel.swift; sourceTree = "<group>"; };
+		9855B97E244E32A4005547B8 /* QRScanViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScanViewController.swift; sourceTree = "<group>"; };
 		98CAAE4D244DEC3A00718BA6 /* eScooter Tracker MapKit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "eScooter Tracker MapKit.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		98CAAE50244DEC3A00718BA6 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		98CAAE52244DEC3A00718BA6 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -59,7 +67,11 @@
 				98CAAE50244DEC3A00718BA6 /* AppDelegate.swift */,
 				98CAAE52244DEC3A00718BA6 /* SceneDelegate.swift */,
 				98CAAE54244DEC3A00718BA6 /* ViewController.swift */,
+				9855B97C244E2F7B005547B8 /* PopUpLabel.swift */,
+				9855B978244E1D77005547B8 /* AboutViewController.swift */,
 				98CAAE56244DEC3A00718BA6 /* Main.storyboard */,
+				9855B97E244E32A4005547B8 /* QRScanViewController.swift */,
+				9855B97A244E208D005547B8 /* AboutAuthorViewController.swift */,
 				98CAAE59244DEC3A00718BA6 /* Assets.xcassets */,
 				98CAAE5B244DEC3A00718BA6 /* LaunchScreen.storyboard */,
 				98CAAE5E244DEC3A00718BA6 /* Info.plist */,
@@ -140,7 +152,11 @@
 			files = (
 				98CAAE55244DEC3A00718BA6 /* ViewController.swift in Sources */,
 				98CAAE51244DEC3A00718BA6 /* AppDelegate.swift in Sources */,
+				9855B979244E1D77005547B8 /* AboutViewController.swift in Sources */,
+				9855B97F244E32A4005547B8 /* QRScanViewController.swift in Sources */,
 				98CAAE53244DEC3A00718BA6 /* SceneDelegate.swift in Sources */,
+				9855B97B244E208D005547B8 /* AboutAuthorViewController.swift in Sources */,
+				9855B97D244E2F7B005547B8 /* PopUpLabel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
