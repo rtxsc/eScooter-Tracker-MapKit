@@ -7,14 +7,32 @@
 //
 
 import UIKit
+import PubNub // <- Here is our PubNub module import.
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
-
-
+    
+    var pubnub: PubNub!
+    var window: UIWindow?
+    
+    let pub_key = "pub-c-8f52ff44-41bb-422c-a0c0-a63167077c6d"
+    let sub_key = "sub-c-cf845704-8def-11ea-8e98-72774568d584"
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        PubNub.log.levels = [.all]
+        PubNub.log.writers = [ConsoleLogWriter(), FileLogWriter()]
+
+        var config = PubNubConfiguration(publishKey: pub_key, subscribeKey: sub_key)
+        config.uuid = "iPhone SE(2020)"
+        pubnub = PubNub(configuration: config)
+
+        if #available(iOS 13.0, *) {
+          // no-op - UI created in scene delegate
+        } else if let rootVC = self.window?.rootViewController as? ViewController {
+          rootVC.pubnub = pubnub
+        }
+
         return true
     }
 

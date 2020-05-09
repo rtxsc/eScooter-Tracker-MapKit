@@ -3,14 +3,16 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 50;
+	objectVersion = 51;
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0652F6C947290AEC06CBF3D4 /* Pods_eScooter_Tracker_MapKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1EFA50A91D1AA19723B8B67 /* Pods_eScooter_Tracker_MapKit.framework */; };
 		9855B979244E1D77005547B8 /* AboutViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9855B978244E1D77005547B8 /* AboutViewController.swift */; };
 		9855B97B244E208D005547B8 /* AboutAuthorViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9855B97A244E208D005547B8 /* AboutAuthorViewController.swift */; };
 		9855B97D244E2F7B005547B8 /* PopUpLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9855B97C244E2F7B005547B8 /* PopUpLabel.swift */; };
 		9855B97F244E32A4005547B8 /* QRScanViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9855B97E244E32A4005547B8 /* QRScanViewController.swift */; };
+		989A35192465AADA0077A3A1 /* unlockCodeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 989A35182465AADA0077A3A1 /* unlockCodeViewController.swift */; };
 		98CAAE51244DEC3A00718BA6 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98CAAE50244DEC3A00718BA6 /* AppDelegate.swift */; };
 		98CAAE53244DEC3A00718BA6 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98CAAE52244DEC3A00718BA6 /* SceneDelegate.swift */; };
 		98CAAE55244DEC3A00718BA6 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98CAAE54244DEC3A00718BA6 /* ViewController.swift */; };
@@ -20,10 +22,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		1C1C85D5520255BD595B5E40 /* Pods-eScooter Tracker MapKit.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-eScooter Tracker MapKit.debug.xcconfig"; path = "Target Support Files/Pods-eScooter Tracker MapKit/Pods-eScooter Tracker MapKit.debug.xcconfig"; sourceTree = "<group>"; };
+		4447CE183F3869382DE982CF /* Pods-eScooter Tracker MapKit.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-eScooter Tracker MapKit.release.xcconfig"; path = "Target Support Files/Pods-eScooter Tracker MapKit/Pods-eScooter Tracker MapKit.release.xcconfig"; sourceTree = "<group>"; };
 		9855B978244E1D77005547B8 /* AboutViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutViewController.swift; sourceTree = "<group>"; };
 		9855B97A244E208D005547B8 /* AboutAuthorViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutAuthorViewController.swift; sourceTree = "<group>"; };
 		9855B97C244E2F7B005547B8 /* PopUpLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopUpLabel.swift; sourceTree = "<group>"; };
 		9855B97E244E32A4005547B8 /* QRScanViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScanViewController.swift; sourceTree = "<group>"; };
+		989A35182465AADA0077A3A1 /* unlockCodeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = unlockCodeViewController.swift; sourceTree = "<group>"; };
 		98CAAE4D244DEC3A00718BA6 /* eScooter Tracker MapKit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "eScooter Tracker MapKit.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		98CAAE50244DEC3A00718BA6 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		98CAAE52244DEC3A00718BA6 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -32,6 +37,7 @@
 		98CAAE59244DEC3A00718BA6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		98CAAE5C244DEC3A00718BA6 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		98CAAE5E244DEC3A00718BA6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C1EFA50A91D1AA19723B8B67 /* Pods_eScooter_Tracker_MapKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_eScooter_Tracker_MapKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -39,6 +45,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0652F6C947290AEC06CBF3D4 /* Pods_eScooter_Tracker_MapKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -50,6 +57,8 @@
 			children = (
 				98CAAE4F244DEC3A00718BA6 /* eScooter Tracker MapKit */,
 				98CAAE4E244DEC3A00718BA6 /* Products */,
+				C8C9E29FC208F797C94EDA11 /* Pods */,
+				B86E18A076FB85E86245507E /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -64,6 +73,7 @@
 		98CAAE4F244DEC3A00718BA6 /* eScooter Tracker MapKit */ = {
 			isa = PBXGroup;
 			children = (
+				989A35182465AADA0077A3A1 /* unlockCodeViewController.swift */,
 				98CAAE50244DEC3A00718BA6 /* AppDelegate.swift */,
 				98CAAE52244DEC3A00718BA6 /* SceneDelegate.swift */,
 				98CAAE54244DEC3A00718BA6 /* ViewController.swift */,
@@ -79,6 +89,23 @@
 			path = "eScooter Tracker MapKit";
 			sourceTree = "<group>";
 		};
+		B86E18A076FB85E86245507E /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				C1EFA50A91D1AA19723B8B67 /* Pods_eScooter_Tracker_MapKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		C8C9E29FC208F797C94EDA11 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				1C1C85D5520255BD595B5E40 /* Pods-eScooter Tracker MapKit.debug.xcconfig */,
+				4447CE183F3869382DE982CF /* Pods-eScooter Tracker MapKit.release.xcconfig */,
+			);
+			path = Pods;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -86,9 +113,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 98CAAE61244DEC3A00718BA6 /* Build configuration list for PBXNativeTarget "eScooter Tracker MapKit" */;
 			buildPhases = (
+				9A8958DDB5BA36AAF30A1211 /* [CP] Check Pods Manifest.lock */,
 				98CAAE49244DEC3A00718BA6 /* Sources */,
 				98CAAE4A244DEC3A00718BA6 /* Frameworks */,
 				98CAAE4B244DEC3A00718BA6 /* Resources */,
+				901434ED19AD74A79200CF3C /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -145,6 +174,48 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		901434ED19AD74A79200CF3C /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-eScooter Tracker MapKit/Pods-eScooter Tracker MapKit-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-eScooter Tracker MapKit/Pods-eScooter Tracker MapKit-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-eScooter Tracker MapKit/Pods-eScooter Tracker MapKit-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		9A8958DDB5BA36AAF30A1211 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-eScooter Tracker MapKit-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		98CAAE49244DEC3A00718BA6 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -157,6 +228,7 @@
 				98CAAE53244DEC3A00718BA6 /* SceneDelegate.swift in Sources */,
 				9855B97B244E208D005547B8 /* AboutAuthorViewController.swift in Sources */,
 				9855B97D244E2F7B005547B8 /* PopUpLabel.swift in Sources */,
+				989A35192465AADA0077A3A1 /* unlockCodeViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -298,6 +370,7 @@
 		};
 		98CAAE62244DEC3A00718BA6 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 1C1C85D5520255BD595B5E40 /* Pods-eScooter Tracker MapKit.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
@@ -316,6 +389,7 @@
 		};
 		98CAAE63244DEC3A00718BA6 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 4447CE183F3869382DE982CF /* Pods-eScooter Tracker MapKit.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;

@@ -8,8 +8,13 @@
 
 import UIKit
 import MapKit
+import PubNub
 
 class ViewController: UIViewController {
+    
+    var pubnub: PubNub!
+    let channels = ["Robotronix"]
+    let listener = SubscriptionListener(queue: .main)
 
     var currentValue: Int = 50
     var targetValue: Int = 0
@@ -40,6 +45,8 @@ class ViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        startListeningToChannel()
         // Do any additional setup after loading the view.
         let roundedValue = slider.value.rounded()
         currentValue = Int(roundedValue)
@@ -92,23 +99,23 @@ class ViewController: UIViewController {
            discipline: "Building",
            coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lon))
        mapView.addAnnotation(label)
-       
-//       var labelmarker1 = PopUpLabel(
-//                          title: "sc1",
-//                          locationName: "\(self.marker1.coordinate.latitude), \(self.marker1.coordinate.longitude)",
-//                          discipline: "Vehicle",
-//                          coordinate: initialLocation.coordinate)
-//
-//      var labelmarker2 = PopUpLabel(
-//                      title: "sc2",
-//                      locationName: "\(self.marker2.coordinate.latitude), \(self.marker2.coordinate.longitude)",
-//                      discipline: "Vehicle",
-//                      coordinate: initialLocation.coordinate)
-//
-//       self.mapView.addAnnotation(labelmarker1)
-//       self.mapView.addAnnotation(labelmarker2)
-         
-       // Set timer of 5 seconds before beginning the animation.
+       /*
+        var labelmarker1 = PopUpLabel(
+                          title: "sc1",
+                          locationName: "\(self.marker1.coordinate.latitude), \(self.marker1.coordinate.longitude)",
+                          discipline: "Vehicle",
+                          coordinate: initialLocation.coordinate)
+
+        var labelmarker2 = PopUpLabel(
+                      title: "sc2",
+                      locationName: "\(self.marker2.coordinate.latitude), \(self.marker2.coordinate.longitude)",
+                      discipline: "Vehicle",
+                      coordinate: initialLocation.coordinate)
+
+        self.mapView.addAnnotation(labelmarker1)
+        self.mapView.addAnnotation(labelmarker2)
+         */
+        // Set timer of 5 seconds before beginning the animation.
       weak var timer: Timer?
       
       //in a function or viewDidLoad() --- start global timer for func timerAction
@@ -139,25 +146,57 @@ class ViewController: UIViewController {
       }
       // Start moving annotations every 5 seconds
       updatePosition()
-           
-        
-        
     } // end of viewDidLoad
     
-       // timer function to calculate longitude shift value
+    func startListeningToChannel(){
+        listener.didReceiveMessage = { message in
+            print("[Message]: \(message)")
+          }
+          listener.didReceiveStatus = { status in
+            switch status {
+            case .success(let connection):
+              if connection == .connected {
+//                self.pubnub.publish(channel: self.channels[0], message: "Hello from iPhone SE 2020") { result in
+//                  print(result.map { "Publish Response at \($0.timetoken.timetokenDate)" })
+//                }
+                self.pubnub.publish(channel: self.channels[0], message: "Hello from iPhone SE 2020") { result in
+                  switch result {
+                  case .success(_):
+//                    print("Handle successful Publish response: \(response)")
+                    print(result.map {"Done my job at \($0.timetoken.timetokenDate)"})
+                  case .failure(_):
+//                    print("Handle response error: \(error.localizedDescription)")
+                    print("Oh-ohh")
+                  }
+                }
+                
+              }
+            case .failure(let error):
+              print("Status Error: \(error.localizedDescription)")
+            }
+          }
+          pubnub.add(listener)
+          pubnub.subscribe(to: channels, withPresence: true)
+    }
+       // timer function to calculate lat/lon shift value
        @objc func timerAction(){
            tick += 1
            shift = tick / 10000
-    // divisor in the expression `tick / 10` controls the animation speed.
+            // divisor in the expression `tick / 10`
+            // controls the animation speed.
             shift_lon = radius * sin(tick / 10)
             shift_lat = radius * cos(tick / 10)
-    //print("second: \(tick!) & lon shifted by: \(shift!)")
-    //print("lat:\(shift_lat) lon:\(shift_lon)")
-        
            }
     
+    @IBAction func rideNow(){
+        print("Unlocking scooter now...\n")
+        self.pubnub.publish(channel: self.channels[0], message: "wallet=\(currentValue)") { result in
+        print(result.map { "Publish Response at \($0.timetoken.timetokenDate)" })
+        }
+    }
+    
     @IBAction func relocateUser(){
-        print("Relocating user\n")
+        print("Relocating user...\n")
         mapView.centerToLocation(initialLocation)
 
     }
@@ -188,11 +227,12 @@ class ViewController: UIViewController {
             title = "Not even close!"
         }
         
-        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        let action = UIAlertAction(title: "Return", style: .default, handler: nil)
+//        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+//        let action = UIAlertAction(title: "Return", style: .default, handler: nil)
         
-        alert.addAction(action)
-        present(alert,animated: true, completion: nil)
+//        alert.addAction(action)
+//        present(alert,animated: true, completion: nil)
+        
         startNewRound()
     }
     
@@ -215,9 +255,6 @@ class ViewController: UIViewController {
     func updateTargetValue(){
         target.text = String(targetValue)
     }
-
-
-
 }
 
 
