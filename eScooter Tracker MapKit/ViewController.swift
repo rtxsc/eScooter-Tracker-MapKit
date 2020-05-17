@@ -10,23 +10,46 @@ import UIKit
 import MapKit
 import PubNub
 
+struct userPayload: Codable,JSONCodable{
+    var name: String
+    var currentCredit: Double
+    var userActivation: Bool
+    var forceStop: Bool
+    var startRiding: String?
+    var stopRiding: String?
+    var description: String?
+}
+
+
 class ViewController: UIViewController {
     
     var pubnub: PubNub!
     let channels = ["Robotronix"]
     let listener = SubscriptionListener(queue: .main)
-
-    var currentValue: Int = 50
-    var targetValue: Int = 0
+    
+    var unlockCost: Double = 2.0 // unlocking requires RM2 in eWallet
+    var currentCredit: Double = 0.0
+    var minimumCredit: Double = 0.0
+    var targetValue: Double = 0
     var score = 0
     var round: Int = 0
+    var isRiding: Bool = false
+    var hasRode: Bool = false
+    var hasPublishedCredit: Bool = false
+    weak var rideDurationCounter: Timer?
+    var start: String = ""
+    var globalStart: String = ""
+    var stop: String = ""
     
+    @IBOutlet weak var stopRidingButton: UIButton!
+    @IBOutlet weak var rideDuration: UILabel!
+    @IBOutlet weak var rideState: UILabel!
     @IBOutlet weak var mapView: MKMapView!
     @IBOutlet weak var slider: UISlider!
     @IBOutlet weak var target: UILabel!
     @IBOutlet weak var scoreLabel: UILabel!
     @IBOutlet weak var roundLabel: UILabel!
-    @IBOutlet weak var currentValueLabel: UILabel!
+    @IBOutlet weak var currentCreditLabel: UILabel!
     
     fileprivate let locationManager:CLLocationManager = CLLocationManager()
        
@@ -40,16 +63,24 @@ class ViewController: UIViewController {
        var radius = 0.001 // rotation radius
     
        var tick: Double! = 0.0
+       var ticker: Double! = 0.0
+
        var shift: Double! = 0.0
        var initialLocation: CLLocation!
+  
+    var user = userPayload(name: "iPhone SE(2020)", currentCredit: 0.0, userActivation: false, forceStop: false, startRiding: nil, stopRiding: nil, description: nil)
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+        let encoder = JSONEncoder()
+        user.name = "Yazid"
+        encoder.outputFormatting = .prettyPrinted
+
+        stopRidingButton.isHidden = true
         startListeningToChannel()
         // Do any additional setup after loading the view.
         let roundedValue = slider.value.rounded()
-        currentValue = Int(roundedValue)
+        currentCredit = Double(roundedValue)
         self.restartGame()
         
         if #available(iOS 13.0, *) {
@@ -99,13 +130,16 @@ class ViewController: UIViewController {
            discipline: "Building",
            coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lon))
        mapView.addAnnotation(label)
-       /*
-        var labelmarker1 = PopUpLabel(
-                          title: "sc1",
-                          locationName: "\(self.marker1.coordinate.latitude), \(self.marker1.coordinate.longitude)",
-                          discipline: "Vehicle",
-                          coordinate: initialLocation.coordinate)
-
+   
+     
+/*
+         let labelmarker1 = PopUpLabel(
+                            title: "sc1",
+                            locationName: "\(self!.marker1.coordinate.latitude), \(self!.marker1.coordinate.longitude)",
+                            discipline: "Vehicle",
+                            coordinate: newPosition1)
+         self!.mapView.addAnnotation(labelmarker1)
+         
         var labelmarker2 = PopUpLabel(
                       title: "sc2",
                       locationName: "\(self.marker2.coordinate.latitude), \(self.marker2.coordinate.longitude)",
@@ -141,8 +175,13 @@ class ViewController: UIViewController {
         self?.marker2.subtitle = "\(self!.marker2.coordinate.latitude), \(self!.marker2.coordinate.longitude)"
         self?.marker1.coordinate = newPosition1
         self?.marker2.coordinate = newPosition2
+            
+            
               }, completion: nil)
+            
           }
+   
+                 
       }
       // Start moving annotations every 5 seconds
       updatePosition()
@@ -188,12 +227,134 @@ class ViewController: UIViewController {
             shift_lat = radius * cos(tick / 10)
            }
     
-    @IBAction func rideNow(){
-        print("Unlocking scooter now...\n")
-        self.pubnub.publish(channel: self.channels[0], message: "wallet=\(currentValue)") { result in
-        print(result.map { "Publish Response at \($0.timetoken.timetokenDate)" })
+    @objc func rideDurationTimer(){
+
+        if isRiding {
+            ticker += 1.0
+            rideDuration.text = String(ticker)
+            currentCredit -= 0.50
+            if currentCredit <= minimumCredit{
+                currentCredit = minimumCredit
+            }
+            currentCreditLabel.text = String(currentCredit.rounded())
+            rideNow() // always crosscheck currentCredit state
+        }
+        else{
+            ticker = 0.0
+            rideDurationCounter?.invalidate()
+        }
+
+    }
+    
+    @IBAction func stopTheRide(){
+        stop = stopRidingTime()
+        isRiding = false
+        ticker = 0.0
+        rideDurationCounter?.invalidate()
+        let title = "Stop Riding"
+        let message = "You have stopped the riding!"
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+         let action = UIAlertAction(title: "Return", style: .default, handler: nil)
+         
+         alert.addAction(action)
+         present(alert,animated: true, completion: nil)
+        stopRidingButton.isHidden = true
+        
+        if hasPublishedCredit == true {
+            self.pubnub.publish(channel: self.channels[0], message: userPayload(name: user.name, currentCredit: currentCredit, userActivation: false, forceStop: true, startRiding: globalStart, stopRiding: stop, description: nil)) { result in
+            print(result.map { "Publish Response at \($0.timetoken.timetokenDate)" })
+            }
+            hasPublishedCredit = false
+
         }
     }
+  
+    
+    @IBAction func rideNow(){
+        let title: String
+        var message = "You eWallet amount is RM \(currentCredit.rounded())"
+
+        if(currentCredit <= unlockCost){
+            stop = stopRidingTime()
+            isRiding = false
+            rideState.text = "Halting"
+            if hasRode{
+                title = "Cannot proceed riding"
+            }
+            else{
+                title = "Unable to ride scooter"
+            }
+            message += "\nCredit is too low!"
+            displayAlert(title: title, message: message)
+            
+            self.pubnub.publish(channel: self.channels[0], message: userPayload(name: user.name, currentCredit: currentCredit, userActivation: false, forceStop: false, startRiding: globalStart, stopRiding: stop, description: nil)) { result in
+                        print(result.map { "Publish Response at \($0.timetoken.timetokenDate)" })
+                        }
+        }
+        else if(currentCredit <= minimumCredit){
+            stop = stopRidingTime()
+            isRiding = false
+            rideState.text = "Aborted"
+            title = "Unable to unlock scooter"
+            message += "\nInsufficient Credit!"
+            displayAlert(title: title, message: message)
+            rideDurationCounter?.invalidate()
+            
+            self.pubnub.publish(channel: self.channels[0], message: userPayload(name: user.name, currentCredit: currentCredit, userActivation: false, forceStop: false, startRiding: globalStart, stopRiding: stop, description: nil)) { result in
+                        print(result.map { "Publish Response at \($0.timetoken.timetokenDate)" })
+                        }
+        }
+        else{
+            isRiding = true
+            stopRidingButton.isHidden = false
+            rideState.text = "Riding"
+            title = "Enjoy your ride!"
+            message += "\nRide will end automatically once your credit has finished."
+            print("Scooter is running for \(ticker!) seconds...\n")
+
+            if hasPublishedCredit == false{
+                print("Unlocking scooter now...\n")
+                start =  startRidingTime()
+                globalStart = start
+                displayAlert(title: title, message: message)
+           
+                self.pubnub.publish(channel: self.channels[0], message:userPayload(name: user.name, currentCredit: currentCredit, userActivation: true, forceStop: false, startRiding: start, stopRiding: nil, description: nil)) { result in
+                print(result.map { "Publish Response at \($0.timetoken.timetokenDate)" })
+                }
+                hasPublishedCredit = true
+                let delay = 1.0
+                // initialize rideDurationCounter here
+                rideDurationCounter = Timer.scheduledTimer(timeInterval: delay, target: self, selector: #selector(rideDurationTimer), userInfo: nil, repeats: true)
+                hasRode = true
+            }
+        }
+    }
+    
+    func displayAlert(title:String,message:String){
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        let action = UIAlertAction(title: "Return", style: .default, handler: nil)
+        alert.addAction(action)
+        present(alert,animated: true, completion: nil)
+    }
+    
+    func startRidingTime()->String{
+        let startRiding = Date()
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .medium
+        start = formatter.string(from: startRiding)
+        return start
+    }
+    
+    func stopRidingTime()->String{
+         let stopRiding = Date()
+         let formatter = DateFormatter()
+         formatter.dateStyle = .medium
+         formatter.timeStyle = .medium
+         stop = formatter.string(from: stopRiding)
+         return stop
+     }
+
     
     @IBAction func relocateUser(){
         print("Relocating user...\n")
@@ -210,44 +371,25 @@ class ViewController: UIViewController {
     
     @IBAction func showAlert(){
         
-        let difference = abs(currentValue - targetValue)
+        let difference = abs(currentCredit - targetValue)
         let points = 100 - difference
-        score += points
+        score += Int(points)
         scoreLabel.text = String(score)
-        let message = "You scored: \(points) points"
-        
-        let title: String
-        if difference == 0{
-            title = "Perfect!"
-        }
-        else if difference < 5{
-            title = "Almost there..."
-        }
-        else{
-            title = "Not even close!"
-        }
-        
-//        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-//        let action = UIAlertAction(title: "Return", style: .default, handler: nil)
-        
-//        alert.addAction(action)
-//        present(alert,animated: true, completion: nil)
-        
         startNewRound()
     }
     
     @IBAction func sliderMoved(_ slider: UISlider){
         let roundedValue = slider.value.rounded()
-        currentValue = Int(roundedValue)
-        currentValueLabel.text = String(currentValue)
+        currentCredit = Double(roundedValue)
+        currentCreditLabel.text = String(currentCredit)
     }
     
     func startNewRound() {
         round += 1
-        targetValue = Int.random(in: 1...100)
-        currentValue = 50
-        slider.value = Float(currentValue)
-        currentValueLabel.text = String(currentValue)
+        targetValue = Double(Int.random(in: 1...100))
+//        currentCredit = 50
+        slider.value = Float(currentCredit)
+        currentCreditLabel.text = String(currentCredit)
         roundLabel.text = String(round)
         updateTargetValue()
     }
@@ -255,7 +397,13 @@ class ViewController: UIViewController {
     func updateTargetValue(){
         target.text = String(targetValue)
     }
-}
+    
+    
+  
+
+}// end of ViewController
+
+
 
 
 extension ViewController: MKMapViewDelegate {
@@ -269,7 +417,7 @@ extension ViewController: MKMapViewDelegate {
       return nil
     }
     // 3
-    let identifier = "popuplabel"
+    let identifier = "Annotation"
     var view: MKMarkerAnnotationView
     // 4
     if let dequeuedView = mapView.dequeueReusableAnnotationView(
@@ -282,7 +430,7 @@ extension ViewController: MKMapViewDelegate {
         annotation: annotation,
         reuseIdentifier: identifier)
       view.canShowCallout = true
-      view.calloutOffset = CGPoint(x: -5, y: 5)
+      view.calloutOffset = CGPoint(x: -10, y: 20)
       view.rightCalloutAccessoryView = UIButton(type: .detailDisclosure)
     }
     return view
@@ -302,3 +450,4 @@ private extension MKMapView {
     setRegion(coordinateRegion, animated: true)
   }
 }
+

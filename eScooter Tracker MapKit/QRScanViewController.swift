@@ -10,7 +10,7 @@ import UIKit
 import PubNub
 
 class QRScanViewController: UIViewController {
-  
+    
     let pubnub: PubNub? = nil
     @IBOutlet weak var walletAmountLabel: UILabel!
     @IBOutlet weak var stepper: UIStepper!
@@ -19,6 +19,7 @@ class QRScanViewController: UIViewController {
     let listener = SubscriptionListener(queue: .main)
     var currentWalletAmount: Double = 0.0
     var tries = 0
+    
 
     override func viewDidLoad() {
         super.viewDidLoad()
