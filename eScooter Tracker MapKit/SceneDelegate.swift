@@ -26,16 +26,26 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
       guard let windowScence = scene as? UIWindowScene, let pubnub = (UIApplication.shared.delegate as? AppDelegate)?.pubnub else { return }
+        
       let mainStoryboard : UIStoryboard = UIStoryboard(name: "Main", bundle: nil)
 
       let rootVC = mainStoryboard.instantiateInitialViewController() as? ViewController
       rootVC?.pubnub = pubnub
+        
+     let rootVC2 = mainStoryboard.instantiateInitialViewController() as? QRScanViewController
+      rootVC2?.pubnub = pubnub
 
       let window = UIWindow(windowScene: windowScence)
       window.rootViewController = rootVC
       window.makeKeyAndVisible()
 
       self.window = window
+        
+        let window2 = UIWindow(windowScene: windowScence)
+           window2.rootViewController = rootVC2
+           window2.makeKeyAndVisible()
+
+           self.window = window
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {

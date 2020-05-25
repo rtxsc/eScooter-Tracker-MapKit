@@ -110,7 +110,7 @@ class ScannerViewController: UIViewController, AVCaptureMetadataOutputObjectsDel
 class QRScanViewController: UIViewController,AVCaptureMetadataOutputObjectsDelegate  {
     var captureSession: AVCaptureSession!
     var previewLayer: AVCaptureVideoPreviewLayer!
-    let pubnub: PubNub? = nil
+    var pubnub: PubNub! 
     @IBOutlet weak var walletAmountLabel: UILabel!
     @IBOutlet weak var stepper: UIStepper!
     
@@ -226,9 +226,9 @@ class QRScanViewController: UIViewController,AVCaptureMetadataOutputObjectsDeleg
         print("\n\nTries:\(tries)\nTrying to unlock the scooter with current eWallet amount\n")
         print("RM \(currentWalletAmount)")
         
-//        self.pubnub!.publish(channel: self.channels[0], message: "wallet=\(currentWalletAmount)") { result in
-//           print(result.map { "Publish Response at \($0.timetoken.timetokenDate)" })
-//        }
+        self.pubnub?.publish(channel: self.channels[0], message: currentWalletAmount ) { result in
+                           print(result.map { "Publish Response at \($0.timetoken.timetokenDate)" })
+                           }
      }
     
     @IBAction func close(){

@@ -30,7 +30,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         if #available(iOS 13.0, *) {
           // no-op - UI created in scene delegate
         } else if let rootVC = self.window?.rootViewController as? ViewController {
-          rootVC.pubnub = pubnub
+            rootVC.pubnub = pubnub
+        }
+        else if let rootVC2 = self.window?.rootViewController as? QRScanViewController {
+            rootVC2.pubnub = pubnub
         }
 
         return true
