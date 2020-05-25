@@ -463,7 +463,6 @@ class ViewController: UIViewController {
     func checkForHandshake(){
         
         if(code == "5347"){
-            
             self.pubnub.publish(channel: self.channels[0], message: [code,scooterUUID]) { result in
                           print(result.map { "Publish Response at \($0.timetoken.timetokenDate)" })
                           }
@@ -489,12 +488,13 @@ class ViewController: UIViewController {
     
     
     func promptForUnlockCode() {
+        let userUUID = pubnub.configuration.uuid
         let input = UIAlertController(title: "Enter Unlock Code", message: "Unlock Code is the 4-digit number found on scooter dashboard.", preferredStyle: .alert)
         input.addTextField()
         
         let submitAction = UIAlertAction(title: "Unlock Now", style: .default) { [unowned input] _ in
             self.code = input.textFields![0].text!
-            self.pubnub.publish(channel: self.channels[0], message: [self.code,self.scooterUUID]) { result in
+            self.pubnub.publish(channel: self.channels[0], message: [self.code,userUUID]) { result in
                      print(result.map { "Publish Response at \($0.timetoken.timetokenDate)" })
                      }
            
