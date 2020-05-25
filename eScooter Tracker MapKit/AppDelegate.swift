@@ -24,7 +24,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         PubNub.log.writers = [ConsoleLogWriter(), FileLogWriter()]
 
         var config = PubNubConfiguration(publishKey: pub_key, subscribeKey: sub_key)
-        config.uuid = "iPhone SE(2020)"
+        config.uuid = "SE(2020)"
         pubnub = PubNub(configuration: config)
 
         if #available(iOS 13.0, *) {

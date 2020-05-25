@@ -10,6 +10,23 @@ import UIKit
 import MapKit
 import PubNub
 
+public struct HereNowPayload: Codable {
+  public let totalOccupancy: Int
+  public let totalChannels: Int
+  public let channels: [String: HereNowChannelsPayload]
+  public let uuids: [String]
+}
+
+public struct HereNowChannelsPayload: Codable {
+  public let occupancy: Int
+  public let uuids: [HereNowUUIDPayload]
+}
+
+public struct HereNowUUIDPayload: Codable {
+  public let uuid: String
+  public let state: [String: AnyJSON]?
+}
+
 struct userPayload: Codable,JSONCodable{
     var name: String
     var currentCredit: Double
@@ -20,11 +37,10 @@ struct userPayload: Codable,JSONCodable{
     var description: String?
 }
 
-
 class ViewController: UIViewController {
     
     var pubnub: PubNub!
-    let channels = ["Robotronix"]
+    let channels = ["robotronix"]
     let listener = SubscriptionListener(queue: .main)
     
     var unlockCost: Double = 2.0 // unlocking requires RM2 in eWallet
@@ -33,14 +49,24 @@ class ViewController: UIViewController {
     var targetValue: Double = 0
     var score = 0
     var round: Int = 0
+    var handshakeAck: Bool = false
+    var hslistenerFlag: Bool = true
     var isRiding: Bool = false
     var hasRode: Bool = false
     var hasPublishedCredit: Bool = false
     weak var rideDurationCounter: Timer?
+    weak var handshakeListenerCounter: Timer?
+    var handshakeListenerTicker: Int = 0
+
     var start: String = ""
     var globalStart: String = ""
     var stop: String = ""
+    var scooterUUID: String = ""
+    var code: String = ""
     
+    @IBOutlet weak var scanQRButton: UIButton!
+    @IBOutlet weak var unlockCodeButton: UIButton!
+    @IBOutlet weak var rideNowButton: UIButton!
     @IBOutlet weak var stopRidingButton: UIButton!
     @IBOutlet weak var rideDuration: UILabel!
     @IBOutlet weak var rideState: UILabel!
@@ -50,6 +76,7 @@ class ViewController: UIViewController {
     @IBOutlet weak var scoreLabel: UILabel!
     @IBOutlet weak var roundLabel: UILabel!
     @IBOutlet weak var currentCreditLabel: UILabel!
+    @IBOutlet weak var scooterInUseLabel: UILabel!
     
     fileprivate let locationManager:CLLocationManager = CLLocationManager()
        
@@ -72,6 +99,9 @@ class ViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+     
+        rideNowButton.isHidden = true
         let encoder = JSONEncoder()
         user.name = "Yazid"
         encoder.outputFormatting = .prettyPrinted
@@ -81,7 +111,6 @@ class ViewController: UIViewController {
         // Do any additional setup after loading the view.
         let roundedValue = slider.value.rounded()
         currentCredit = Double(roundedValue)
-        self.restartGame()
         
         if #available(iOS 13.0, *) {
         self.overrideUserInterfaceStyle = .dark
@@ -187,10 +216,16 @@ class ViewController: UIViewController {
       updatePosition()
     } // end of viewDidLoad
     
+
     func startListeningToChannel(){
-        listener.didReceiveMessage = { message in
-            print("[Message]: \(message)")
-          }
+        listener.didReceivePresence = { event in
+                print("Channel `\(event.channel)` has occupancy of \(event.occupancy)")
+                print("User(s) Joined: \(event.join)")
+                print("User(s) Left: \(event.leave)")
+                print("User(s) Timedout: \(event.timeout)")
+              }
+
+   
           listener.didReceiveStatus = { status in
             switch status {
             case .success(let connection):
@@ -214,8 +249,23 @@ class ViewController: UIViewController {
               print("Status Error: \(error.localizedDescription)")
             }
           }
+        
+     
           pubnub.add(listener)
-          pubnub.subscribe(to: channels, withPresence: true)
+          pubnub.subscribe(to: channels,
+                        withPresence: true)
+        
+        pubnub.hereNow(on: channels,
+                            includeUUIDs: false,
+                         also: true) { result in
+                         switch result {
+                         case let .success(response):
+                           print("Successful hereNow Response: \(response)")
+                         case let .failure(error):
+                           print("Failed hereNow Response: \(error.localizedDescription)")
+                         }
+                       }
+     
     }
        // timer function to calculate lat/lon shift value
        @objc func timerAction(){
@@ -259,6 +309,11 @@ class ViewController: UIViewController {
          alert.addAction(action)
          present(alert,animated: true, completion: nil)
         stopRidingButton.isHidden = true
+        rideNowButton.isHidden = false
+        scanQRButton.isHidden = false
+        unlockCodeButton.isHidden = false
+        slider.isHidden = false
+
         
         if hasPublishedCredit == true {
             self.pubnub.publish(channel: self.channels[0], message: userPayload(name: user.name, currentCredit: currentCredit, userActivation: false, forceStop: true, startRiding: globalStart, stopRiding: stop, description: nil)) { result in
@@ -267,6 +322,11 @@ class ViewController: UIViewController {
             hasPublishedCredit = false
 
         }
+    }
+    
+    @IBAction func useCodeToUnlock(){
+        promptForUnlockCode()
+
     }
   
     
@@ -326,6 +386,12 @@ class ViewController: UIViewController {
                 // initialize rideDurationCounter here
                 rideDurationCounter = Timer.scheduledTimer(timeInterval: delay, target: self, selector: #selector(rideDurationTimer), userInfo: nil, repeats: true)
                 hasRode = true
+                rideNowButton.isHidden = true
+                scanQRButton.isHidden = true
+                unlockCodeButton.isHidden = true
+                slider.isHidden = true
+                
+                
             }
         }
     }
@@ -361,46 +427,89 @@ class ViewController: UIViewController {
         mapView.centerToLocation(initialLocation)
 
     }
-    
-    @IBAction func restartGame(){
-        score = 0
-        round = 0
-        scoreLabel.text = String(score)
-        startNewRound()
-    }
-    
-    @IBAction func showAlert(){
         
-        let difference = abs(currentCredit - targetValue)
-        let points = 100 - difference
-        score += Int(points)
-        scoreLabel.text = String(score)
-        startNewRound()
-    }
-    
+
     @IBAction func sliderMoved(_ slider: UISlider){
         let roundedValue = slider.value.rounded()
         currentCredit = Double(roundedValue)
         currentCreditLabel.text = String(currentCredit)
     }
     
-    func startNewRound() {
-        round += 1
-        targetValue = Double(Int.random(in: 1...100))
-//        currentCredit = 50
-        slider.value = Float(currentCredit)
-        currentCreditLabel.text = String(currentCredit)
-        roundLabel.text = String(round)
-        updateTargetValue()
-    }
-    
-    func updateTargetValue(){
-        target.text = String(targetValue)
-    }
-    
-    
-  
+    @objc func keepOnListeningToHandshake(){
+            handshakeListenerTicker += 1
+            print("Count:\(handshakeListenerTicker)")
+            listener.didReceiveMessage = { message in
+            print("[Payload]: \(message.payload)")
+            let hs = message.payload
 
+            for item in hs{
+                print("found item:\(item.0)")
+                self.handshakeAck = item.1.boolOptional ?? false
+                print("current HS:\(self.handshakeAck)")
+            }
+
+            print("[Handshake from]: \(message.publisher ?? "defaultUUID")")
+                self.scooterUUID = message.publisher!
+            }
+        
+        if(self.handshakeAck == true){
+            handshakeListenerCounter?.invalidate()
+            hslistenerFlag = false
+            checkForHandshake()
+        }
+                
+    }
+    
+    func checkForHandshake(){
+        
+        if(code == "5347"){
+            
+            self.pubnub.publish(channel: self.channels[0], message: [code,scooterUUID]) { result in
+                          print(result.map { "Publish Response at \($0.timetoken.timetokenDate)" })
+                          }
+            if(hslistenerFlag){
+                handshakeListenerCounter = Timer.scheduledTimer(timeInterval: 5, target: self, selector: #selector(keepOnListeningToHandshake), userInfo: nil, repeats: true)
+            }
+           if(self.handshakeAck == true){
+                hslistenerFlag = true
+                handshakeListenerTicker = 0
+               self.rideNowButton.isHidden = false
+               self.slider.isHidden = false
+               self.scooterInUseLabel.text = self.scooterUUID
+           }
+           else{
+               print("Waiting for acknowledgement from client...")
+           }
+        }
+       else{
+           self.rideNowButton.isHidden = true
+           self.slider.isHidden = true
+       }
+    }
+    
+    
+    func promptForUnlockCode() {
+        let input = UIAlertController(title: "Enter Unlock Code", message: "Unlock Code is the 4-digit number found on scooter dashboard.", preferredStyle: .alert)
+        input.addTextField()
+        
+        let submitAction = UIAlertAction(title: "Unlock Now", style: .default) { [unowned input] _ in
+            self.code = input.textFields![0].text!
+            self.pubnub.publish(channel: self.channels[0], message: [self.code,self.scooterUUID]) { result in
+                     print(result.map { "Publish Response at \($0.timetoken.timetokenDate)" })
+                     }
+           
+            print("Unlock code entered:\(self.code) + handshake:\(self.handshakeAck)")
+            self.checkForHandshake()
+            //Unlock code entered:<_UIAlertControllerTextField: 0x7fd8f2864400; frame = (7 6.5; 225 17.5); text = '1234'; opaque = NO; gestureRecognizers = <NSArray: 0x60000088e130>; layer = <CALayer: 0x600000748440>>
+            // do something interesting with "answer" here
+        }
+
+        input.addAction(submitAction)
+
+        present(input, animated: true)
+    }
+    
+    
 }// end of ViewController
 
 
@@ -441,7 +550,7 @@ private extension MKMapView {
 
   func centerToLocation(
     _ location: CLLocation,
-    regionRadius: CLLocationDistance = 1000
+    regionRadius: CLLocationDistance = 500
   ) {
     let coordinateRegion = MKCoordinateRegion(
       center: location.coordinate,
