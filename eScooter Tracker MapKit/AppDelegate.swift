@@ -24,9 +24,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         PubNub.log.writers = [ConsoleLogWriter(), FileLogWriter()]
 
         var config = PubNubConfiguration(publishKey: pub_key, subscribeKey: sub_key)
-        config.uuid = "SE(2020)"
+        config.uuid = "tomot"
         pubnub = PubNub(configuration: config)
-
+        
+      
         if #available(iOS 13.0, *) {
           // no-op - UI created in scene delegate
         } else if let rootVC = self.window?.rootViewController as? ViewController {

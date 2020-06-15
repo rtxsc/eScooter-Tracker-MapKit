@@ -31,11 +31,14 @@ struct userPayload: Codable,JSONCodable{
     var name: String
     var currentCredit: Double
     var userActivation: Bool
+    var u_act_from_API: String
     var forceStop: Bool
     var startRiding: String?
     var stopRiding: String?
     var description: String?
 }
+
+
 
 class ViewController: UIViewController {
     
@@ -43,6 +46,8 @@ class ViewController: UIViewController {
     let channels = ["robotronix"]
     let listener = SubscriptionListener(queue: .main)
     
+  
+   
     var unlockCost: Double = 2.0 // unlocking requires RM2 in eWallet
     var currentCredit: Double = 0.0
     var minimumCredit: Double = 0.0
@@ -77,6 +82,7 @@ class ViewController: UIViewController {
     @IBOutlet weak var roundLabel: UILabel!
     @IBOutlet weak var currentCreditLabel: UILabel!
     @IBOutlet weak var scooterInUseLabel: UILabel!
+    @IBOutlet weak var waitForAckLabel: UILabel!
     
     fileprivate let locationManager:CLLocationManager = CLLocationManager()
        
@@ -85,6 +91,9 @@ class ViewController: UIViewController {
        
        var lat = 1.583301
        var lon = 110.388393
+    var s1_lat = 0.0
+    var s1_lon = 0.0
+    var coordinate: Array<Float> = Array()
        var shift_lat = 0.0 // running latitude
        var shift_lon = 0.0 // running longitude
        var radius = 0.001 // rotation radius
@@ -95,12 +104,11 @@ class ViewController: UIViewController {
        var shift: Double! = 0.0
        var initialLocation: CLLocation!
   
-    var user = userPayload(name: "iPhone SE(2020)", currentCredit: 0.0, userActivation: false, forceStop: false, startRiding: nil, stopRiding: nil, description: nil)
+    var user = userPayload(name: "iPhone SE(2020)", currentCredit: 0.0, userActivation: false, u_act_from_API: "u_act_0", forceStop: false, startRiding: nil, stopRiding: nil, description: nil)
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-     
+    
         rideNowButton.isHidden = true
         let encoder = JSONEncoder()
         user.name = "Yazid"
@@ -190,9 +198,13 @@ class ViewController: UIViewController {
         // Set animation to last 5 seconds.
         UIView.animate(withDuration: 5, animations: {
 
-        // update new coordinates every 5 seconds
-        newPosition1 = CLLocationCoordinate2D(latitude: self!.lat + self!.shift_lat, longitude: self!.lon + self!.shift_lon)
-        newPosition2 = CLLocationCoordinate2D(latitude: self!.lat - self!.shift_lat, longitude: self!.lon - self!.shift_lon)
+        // update new coordinates every 5 seconds (get real-time coordinate from payload)
+//        newPosition1 = CLLocationCoordinate2D(latitude: self!.lat + self!.shift_lat, longitude: self!.lon + self!.shift_lon)
+//        newPosition2 = CLLocationCoordinate2D(latitude: self!.lat - self!.shift_lat, longitude: self!.lon - self!.shift_lon)
+            
+            newPosition1 = CLLocationCoordinate2D(latitude: self!.lat , longitude: self!.lon)
+            newPosition2 = CLLocationCoordinate2D(latitude: self!.lat - self!.shift_lat, longitude: self!.lon - self!.shift_lon)
+            
 
 //        labelmarker1.coordinate = newPosition1
 //        labelmarker2.coordinate = newPosition2
@@ -205,12 +217,8 @@ class ViewController: UIViewController {
         self?.marker1.coordinate = newPosition1
         self?.marker2.coordinate = newPosition2
             
-            
               }, completion: nil)
-            
           }
-   
-                 
       }
       // Start moving annotations every 5 seconds
       updatePosition()
@@ -218,53 +226,67 @@ class ViewController: UIViewController {
     
 
     func startListeningToChannel(){
-        listener.didReceivePresence = { event in
-                print("Channel `\(event.channel)` has occupancy of \(event.occupancy)")
-                print("User(s) Joined: \(event.join)")
-                print("User(s) Left: \(event.leave)")
-                print("User(s) Timedout: \(event.timeout)")
-              }
-
-   
-          listener.didReceiveStatus = { status in
-            switch status {
-            case .success(let connection):
-              if connection == .connected {
-//                self.pubnub.publish(channel: self.channels[0], message: "Hello from iPhone SE 2020") { result in
-//                  print(result.map { "Publish Response at \($0.timetoken.timetokenDate)" })
-//                }
-                self.pubnub.publish(channel: self.channels[0], message: "Hello from iPhone SE 2020") { result in
-                  switch result {
-                  case .success(_):
-//                    print("Handle successful Publish response: \(response)")
-                    print(result.map {"Done my job at \($0.timetoken.timetokenDate)"})
-                  case .failure(_):
-//                    print("Handle response error: \(error.localizedDescription)")
-                    print("Oh-ohh")
-                  }
-                }
-                
-              }
-            case .failure(let error):
-              print("Status Error: \(error.localizedDescription)")
-            }
-          }
         
-     
+        listener.didReceiveMessage = { message in
+//             print("[Received from channel]: \(message)")
+            let payload = message.payload
+        
+        for item in payload{
+//            print("what i found:\(item.self)")
+            if(item.0.stringOptional=="s1_latitude"){
+                if (item.1.doubleOptional != nil){
+                    self.lat = (item.self.1.doubleOptional ?? 0)
+                }
+            }
+            if(item.0.stringOptional=="s1_longitude"){
+               if (item.1.doubleOptional != nil){
+                  self.lon = (item.self.1.doubleOptional ?? 0)
+               }
+           }
+        }
+//            print("coordinate of client-s1:\(self.lat),\(self.lon)")
+
+        }// close listener
+        
+        
+            
+//        listener.didReceivePresence = { event in
+//                print("Channel `\(event.channel)` has occupancy of \(event.occupancy)")
+//                print("User(s) Joined: \(event.join)")
+//                print("User(s) Left: \(event.leave)")
+//                print("User(s) Timedout: \(event.timeout)")
+//        }
+//          listener.didReceiveStatus = { status in
+//            switch status {
+//            case .success(let connection):
+//              if connection == .connected {
+//                self.pubnub.publish(channel: self.channels[0], message: "Hello from \(self.pubnub.configuration.uuid)") { result in
+//                  switch result {
+//                  case .success(_):
+//                    print(result.map {"TOMOT DONE THE job at \($0.timetoken.timetokenDate)"})
+//                  case .failure(_):
+//                    print("Oh-ohh")
+//                  }
+//                }
+//              }
+//            case .failure(let error):
+//              print("Status Error: \(error.localizedDescription)")
+//            }
+//          }
           pubnub.add(listener)
           pubnub.subscribe(to: channels,
                         withPresence: true)
         
-        pubnub.hereNow(on: channels,
-                            includeUUIDs: false,
-                         also: true) { result in
-                         switch result {
-                         case let .success(response):
-                           print("Successful hereNow Response: \(response)")
-                         case let .failure(error):
-                           print("Failed hereNow Response: \(error.localizedDescription)")
-                         }
-                       }
+//        pubnub.hereNow(on: channels,
+//                            includeUUIDs: false,
+//                         also: true) { result in
+//                         switch result {
+//                         case let .success(response):
+//                           print("Successful hereNow Response: \(response)")
+//                         case let .failure(error):
+//                           print("Failed hereNow Response: \(error.localizedDescription)")
+//                         }
+//                       }
      
     }
        // timer function to calculate lat/lon shift value
@@ -316,8 +338,8 @@ class ViewController: UIViewController {
 
         
         if hasPublishedCredit == true {
-            self.pubnub.publish(channel: self.channels[0], message: userPayload(name: user.name, currentCredit: currentCredit, userActivation: false, forceStop: true, startRiding: globalStart, stopRiding: stop, description: nil)) { result in
-            print(result.map { "Publish Response at \($0.timetoken.timetokenDate)" })
+            self.pubnub.publish(channel: self.channels[0], message: userPayload(name: user.name, currentCredit: currentCredit, userActivation: false, u_act_from_API: "u_act_0", forceStop: true, startRiding: globalStart, stopRiding: stop, description: nil)) { result in
+//            print(result.map { "Publish Response at \($0.timetoken.timetokenDate)" })
             }
             hasPublishedCredit = false
 
@@ -347,7 +369,7 @@ class ViewController: UIViewController {
             message += "\nCredit is too low!"
             displayAlert(title: title, message: message)
             
-            self.pubnub.publish(channel: self.channels[0], message: userPayload(name: user.name, currentCredit: currentCredit, userActivation: false, forceStop: false, startRiding: globalStart, stopRiding: stop, description: nil)) { result in
+            self.pubnub.publish(channel: self.channels[0], message: userPayload(name: user.name, currentCredit: currentCredit, userActivation: false, u_act_from_API: "u_act_0", forceStop: false, startRiding: globalStart, stopRiding: stop, description: nil)) { result in
                         print(result.map { "Publish Response at \($0.timetoken.timetokenDate)" })
                         }
         }
@@ -360,7 +382,7 @@ class ViewController: UIViewController {
             displayAlert(title: title, message: message)
             rideDurationCounter?.invalidate()
             
-            self.pubnub.publish(channel: self.channels[0], message: userPayload(name: user.name, currentCredit: currentCredit, userActivation: false, forceStop: false, startRiding: globalStart, stopRiding: stop, description: nil)) { result in
+            self.pubnub.publish(channel: self.channels[0], message: userPayload(name: user.name, currentCredit: currentCredit, userActivation: false, u_act_from_API: "u_act_0", forceStop: false, startRiding: globalStart, stopRiding: stop, description: nil)) { result in
                         print(result.map { "Publish Response at \($0.timetoken.timetokenDate)" })
                         }
         }
@@ -377,8 +399,10 @@ class ViewController: UIViewController {
                 start =  startRidingTime()
                 globalStart = start
                 displayAlert(title: title, message: message)
+                
            
-                self.pubnub.publish(channel: self.channels[0], message:userPayload(name: user.name, currentCredit: currentCredit, userActivation: true, forceStop: false, startRiding: start, stopRiding: nil, description: nil)) { result in
+                self.pubnub.publish(channel: self.channels[0], message:userPayload(name: user.name, currentCredit: currentCredit, userActivation: true, u_act_from_API: "u_act_1", forceStop: false, startRiding: start, stopRiding: nil, description: nil)) {
+                    result in
                 print(result.map { "Publish Response at \($0.timetoken.timetokenDate)" })
                 }
                 hasPublishedCredit = true
@@ -437,15 +461,16 @@ class ViewController: UIViewController {
     
     @objc func keepOnListeningToHandshake(){
             handshakeListenerTicker += 1
+            waitForAckLabel.text = String(handshakeListenerTicker)
             print("Count:\(handshakeListenerTicker)")
             listener.didReceiveMessage = { message in
             print("[Payload]: \(message.payload)")
             let hs = message.payload
 
             for item in hs{
-                print("found item:\(item.0)")
+//                print("found item:\(item.0)")
                 self.handshakeAck = item.1.boolOptional ?? false
-                print("current HS:\(self.handshakeAck)")
+//                print("current HS:\(self.handshakeAck)")
             }
 
             print("[Handshake from]: \(message.publisher ?? "defaultUUID")")
@@ -467,7 +492,7 @@ class ViewController: UIViewController {
                           print(result.map { "Publish Response at \($0.timetoken.timetokenDate)" })
                           }
             if(hslistenerFlag){
-                handshakeListenerCounter = Timer.scheduledTimer(timeInterval: 5, target: self, selector: #selector(keepOnListeningToHandshake), userInfo: nil, repeats: true)
+                handshakeListenerCounter = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(keepOnListeningToHandshake), userInfo: nil, repeats: true)
             }
            if(self.handshakeAck == true){
                 hslistenerFlag = true
