@@ -24,7 +24,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         PubNub.log.writers = [ConsoleLogWriter(), FileLogWriter()]
 
         var config = PubNubConfiguration(publishKey: pub_key, subscribeKey: sub_key)
-        config.uuid = "tomot"
+        config.uuid = "Comot"
         pubnub = PubNub(configuration: config)
         
       

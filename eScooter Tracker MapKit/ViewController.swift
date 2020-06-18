@@ -38,6 +38,12 @@ struct userPayload: Codable,JSONCodable{
     var description: String?
 }
 
+struct gimmeAck: Codable,JSONCodable{
+    var name: String
+    var unlockCodeGiven: String
+    var askingForAck: Bool
+}
+
 
 
 class ViewController: UIViewController {
@@ -55,6 +61,7 @@ class ViewController: UIViewController {
     var score = 0
     var round: Int = 0
     var handshakeAck: Bool = false
+    var s_act: String?
     var hslistenerFlag: Bool = true
     var isRiding: Bool = false
     var hasRode: Bool = false
@@ -83,17 +90,23 @@ class ViewController: UIViewController {
     @IBOutlet weak var currentCreditLabel: UILabel!
     @IBOutlet weak var scooterInUseLabel: UILabel!
     @IBOutlet weak var waitForAckLabel: UILabel!
+    @IBOutlet weak var distanceToClientLabel: UILabel!
     
     fileprivate let locationManager:CLLocationManager = CLLocationManager()
        
        private let marker1 = MKPointAnnotation()
        private let marker2 = MKPointAnnotation()
        
-       var lat = 1.583301
-       var lon = 110.388393
-    var s1_lat = 0.0
-    var s1_lon = 0.0
-    var coordinate: Array<Float> = Array()
+    // dummy user location far 1.582892,110.387988
+    // dummy user location near 1.583263,110.388561
+    
+    //110.388512,1.583246
+       var lat = 1.583246
+       var lon = 110.388512
+        var s1_lat = 0.0
+        var s1_lon = 0.0
+        
+        var coordinate: Array<Float> = Array()
        var shift_lat = 0.0 // running latitude
        var shift_lon = 0.0 // running longitude
        var radius = 0.001 // rotation radius
@@ -108,7 +121,6 @@ class ViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-    
         rideNowButton.isHidden = true
         let encoder = JSONEncoder()
         user.name = "Yazid"
@@ -162,7 +174,7 @@ class ViewController: UIViewController {
        
          // Show artwork on map
          let label = PopUpLabel(
-           title: "HQ Location",
+           title: "User",
            locationName: "eScooter HQ",
            discipline: "Building",
            coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lon))
@@ -202,7 +214,7 @@ class ViewController: UIViewController {
 //        newPosition1 = CLLocationCoordinate2D(latitude: self!.lat + self!.shift_lat, longitude: self!.lon + self!.shift_lon)
 //        newPosition2 = CLLocationCoordinate2D(latitude: self!.lat - self!.shift_lat, longitude: self!.lon - self!.shift_lon)
             
-            newPosition1 = CLLocationCoordinate2D(latitude: self!.lat , longitude: self!.lon)
+            newPosition1 = CLLocationCoordinate2D(latitude: self!.s1_lat , longitude: self!.s1_lon)
             newPosition2 = CLLocationCoordinate2D(latitude: self!.lat - self!.shift_lat, longitude: self!.lon - self!.shift_lon)
             
 
@@ -235,21 +247,25 @@ class ViewController: UIViewController {
 //            print("what i found:\(item.self)")
             if(item.0.stringOptional=="s1_latitude"){
                 if (item.1.doubleOptional != nil){
-                    self.lat = (item.self.1.doubleOptional ?? 0)
+                    self.s1_lat = (item.self.1.doubleOptional ?? 0)
                 }
             }
             if(item.0.stringOptional=="s1_longitude"){
                if (item.1.doubleOptional != nil){
-                  self.lon = (item.self.1.doubleOptional ?? 0)
+                  self.s1_lon = (item.self.1.doubleOptional ?? 0)
                }
            }
+            if(item.0.stringOptional=="s_act"){
+                        if (item.1.stringOptional != nil){
+                           self.s_act = (item.self.1.stringOptional ?? "s_act")
+                        }
+                    }
         }
-//            print("coordinate of client-s1:\(self.lat),\(self.lon)")
+            print("______________s_act payload:\(self.s_act ?? "s_act_null")")
+            print("coordinate of client-s1:\(self.s1_lat),\(self.s1_lon)")
 
         }// close listener
         
-        
-            
 //        listener.didReceivePresence = { event in
 //                print("Channel `\(event.channel)` has occupancy of \(event.occupancy)")
 //                print("User(s) Joined: \(event.join)")
@@ -322,6 +338,7 @@ class ViewController: UIViewController {
         stop = stopRidingTime()
         isRiding = false
         ticker = 0.0
+        rideState.text = "Stopped"
         rideDurationCounter?.invalidate()
         let title = "Stop Riding"
         let message = "You have stopped the riding!"
@@ -350,12 +367,16 @@ class ViewController: UIViewController {
         promptForUnlockCode()
 
     }
+    
+   
   
     
     @IBAction func rideNow(){
+        let userUUID = pubnub.configuration.uuid
         let title: String
         var message = "You eWallet amount is RM \(currentCredit.rounded())"
-
+        
+   
         if(currentCredit <= unlockCost){
             stop = stopRidingTime()
             isRiding = false
@@ -369,7 +390,7 @@ class ViewController: UIViewController {
             message += "\nCredit is too low!"
             displayAlert(title: title, message: message)
             
-            self.pubnub.publish(channel: self.channels[0], message: userPayload(name: user.name, currentCredit: currentCredit, userActivation: false, u_act_from_API: "u_act_0", forceStop: false, startRiding: globalStart, stopRiding: stop, description: nil)) { result in
+            self.pubnub.publish(channel: self.channels[0], message: userPayload(name: userUUID, currentCredit: currentCredit, userActivation: false, u_act_from_API: "u_act_0", forceStop: false, startRiding: globalStart, stopRiding: stop, description: nil)) { result in
                         print(result.map { "Publish Response at \($0.timetoken.timetokenDate)" })
                         }
         }
@@ -382,41 +403,56 @@ class ViewController: UIViewController {
             displayAlert(title: title, message: message)
             rideDurationCounter?.invalidate()
             
-            self.pubnub.publish(channel: self.channels[0], message: userPayload(name: user.name, currentCredit: currentCredit, userActivation: false, u_act_from_API: "u_act_0", forceStop: false, startRiding: globalStart, stopRiding: stop, description: nil)) { result in
-                        print(result.map { "Publish Response at \($0.timetoken.timetokenDate)" })
-                        }
+            self.pubnub.publish(channel: self.channels[0], message: userPayload(name: userUUID, currentCredit: currentCredit, userActivation: false, u_act_from_API: "u_act_0", forceStop: false, startRiding: globalStart, stopRiding: stop, description: nil)) { result in
+            print(result.map { "Publish Response at \($0.timetoken.timetokenDate)" })
+            }
         }
         else{
-            isRiding = true
-            stopRidingButton.isHidden = false
-            rideState.text = "Riding"
-            title = "Enjoy your ride!"
-            message += "\nRide will end automatically once your credit has finished."
-            print("Scooter is running for \(ticker!) seconds...\n")
+            startListeningToChannel()
+            if(self.s_act == "s_act_0"){
+                displayAlert(title: "Scooter Disabled", message: "Scooter is not in service!\nDo not ride this scooter!")
+            stop = stopRidingTime()
+            isRiding = false
+            rideState.text = "Offline"
+            self.pubnub.publish(channel: self.channels[0], message: userPayload(name: userUUID, currentCredit: currentCredit, userActivation: false, u_act_from_API: "u_act_0", forceStop: false, startRiding: globalStart, stopRiding: stop, description: nil)) { result in
+            print(result.map { "Publish Response at \($0.timetoken.timetokenDate)" })
+            }
 
-            if hasPublishedCredit == false{
-                print("Unlocking scooter now...\n")
-                start =  startRidingTime()
-                globalStart = start
-                displayAlert(title: title, message: message)
-                
-           
-                self.pubnub.publish(channel: self.channels[0], message:userPayload(name: user.name, currentCredit: currentCredit, userActivation: true, u_act_from_API: "u_act_1", forceStop: false, startRiding: start, stopRiding: nil, description: nil)) {
-                    result in
-                print(result.map { "Publish Response at \($0.timetoken.timetokenDate)" })
-                }
-                hasPublishedCredit = true
-                let delay = 1.0
-                // initialize rideDurationCounter here
-                rideDurationCounter = Timer.scheduledTimer(timeInterval: delay, target: self, selector: #selector(rideDurationTimer), userInfo: nil, repeats: true)
-                hasRode = true
-                rideNowButton.isHidden = true
-                scanQRButton.isHidden = true
-                unlockCodeButton.isHidden = true
-                slider.isHidden = true
-                
                 
             }
+            else{
+                isRiding = true
+                stopRidingButton.isHidden = false
+                rideState.text = "Riding"
+                title = "Enjoy your ride!"
+                message += "\nRide will end automatically once your credit has finished."
+                print("Scooter is running for \(ticker!) seconds...\n")
+
+                if hasPublishedCredit == false{
+                    print("Unlocking scooter now...\n")
+                    start =  startRidingTime()
+                    globalStart = start
+                    displayAlert(title: title, message: message)
+                    
+                
+                    self.pubnub.publish(channel: self.channels[0], message:userPayload(name: userUUID, currentCredit: currentCredit, userActivation: true, u_act_from_API: "u_act_1", forceStop: false, startRiding: start, stopRiding: nil, description: nil)) {
+                        result in
+                    print(result.map { "Publish Response at \($0.timetoken.timetokenDate)" })
+                    }
+                    hasPublishedCredit = true
+                    let delay = 1.0
+                    // initialize rideDurationCounter here
+                    rideDurationCounter = Timer.scheduledTimer(timeInterval: delay, target: self, selector: #selector(rideDurationTimer), userInfo: nil, repeats: true)
+                    hasRode = true
+                    rideNowButton.isHidden = true
+                    scanQRButton.isHidden = true
+                    unlockCodeButton.isHidden = true
+                    slider.isHidden = true
+                
+                }
+                
+            }
+            
         }
     }
     
@@ -462,14 +498,16 @@ class ViewController: UIViewController {
     @objc func keepOnListeningToHandshake(){
             handshakeListenerTicker += 1
             waitForAckLabel.text = String(handshakeListenerTicker)
-            print("Count:\(handshakeListenerTicker)")
+//            print("Count:\(handshakeListenerTicker)")
             listener.didReceiveMessage = { message in
             print("[Payload]: \(message.payload)")
             let hs = message.payload
 
             for item in hs{
 //                print("found item:\(item.0)")
-                self.handshakeAck = item.1.boolOptional ?? false
+                if(item.0.stringOptional=="handshakeAck"){
+                   self.handshakeAck = item.1.boolOptional ?? false
+                }
 //                print("current HS:\(self.handshakeAck)")
             }
 
@@ -478,32 +516,70 @@ class ViewController: UIViewController {
             }
         
         if(self.handshakeAck == true){
+            let msg = "Enjoy your ride!"
+            displayAlert(title:"Validation Completed!",message:msg)
             handshakeListenerCounter?.invalidate()
             hslistenerFlag = false
             checkForHandshake()
         }
                 
     }
+    // CLLocationCoordinate2D
+    func getDirections(loc1: CLLocationCoordinate2D, loc2: CLLocationCoordinate2D) {
+    let userUUID = pubnub.configuration.uuid
+       let source = MKMapItem(placemark: MKPlacemark(coordinate: loc1))
+       source.name = userUUID
+       let destination = MKMapItem(placemark: MKPlacemark(coordinate: loc2))
+       destination.name = "client-s1"
+       MKMapItem.openMaps(with: [source, destination], launchOptions: [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving])
+    }
     
     func checkForHandshake(){
         
         if(code == "5347"){
-            self.pubnub.publish(channel: self.channels[0], message: [code,scooterUUID]) { result in
-                          print(result.map { "Publish Response at \($0.timetoken.timetokenDate)" })
-                          }
-            if(hslistenerFlag){
-                handshakeListenerCounter = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(keepOnListeningToHandshake), userInfo: nil, repeats: true)
+            print("user location:\(self.lat) , \(self.lon)")
+            print("client location:\(self.s1_lat) , \(self.s1_lon)")
+
+            let user_location = CLLocation(latitude:self.lat, longitude:self.lon)
+            let client_location = CLLocation(latitude:self.s1_lat, longitude:self.s1_lon)
+            
+            let user_marker = CLLocationCoordinate2D(latitude: CLLocationDegrees(exactly: self.lat)!, longitude: CLLocationDegrees(exactly: self.lon)!)
+            let client_marker = CLLocationCoordinate2D(latitude: CLLocationDegrees(exactly: self.s1_lat)!, longitude: CLLocationDegrees(exactly: self.s1_lon)!)
+            let distance = user_location.distance(from: client_location)
+            self.distanceToClientLabel.text = String(distance.rounded())+" m"
+            print("you are \(distance.rounded()) meter away from the client")
+            
+            if(distance >= 5.0){
+                self.getDirections(loc1: user_marker, loc2: client_marker)
+                let msg = "You are too far from the scooter\n\nYou must be within 2 meter away from scooter to unlock"
+                displayAlert(title:"Cannot Unlock!",message:msg)
             }
-           if(self.handshakeAck == true){
-                hslistenerFlag = true
-                handshakeListenerTicker = 0
-               self.rideNowButton.isHidden = false
-               self.slider.isHidden = false
-               self.scooterInUseLabel.text = self.scooterUUID
-           }
-           else{
-               print("Waiting for acknowledgement from client...")
-           }
+            else{
+                
+                let msg = "Waiting for scooter response."
+                displayAlert(title:"Unlock Successful!",message:msg)
+
+                // allow user to unlock scooter if distance less than 2 meter
+                self.pubnub.publish(channel: self.channels[0], message: [code,scooterUUID]) { result in
+                               print(result.map { "Publish Response at \($0.timetoken.timetokenDate)" })
+                               }
+                 if(hslistenerFlag){
+                     handshakeListenerCounter = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(keepOnListeningToHandshake), userInfo: nil, repeats: true)
+                 }
+                if(self.handshakeAck == true){
+             
+                     hslistenerFlag = true
+                     handshakeListenerTicker = 0
+                    self.rideNowButton.isHidden = false
+                    self.slider.isHidden = false
+                    self.scooterInUseLabel.text = self.scooterUUID
+                }
+                else{
+                    print("Waiting for acknowledgement from client...")
+                }
+                
+            }
+            
         }
        else{
            self.rideNowButton.isHidden = true
@@ -513,25 +589,36 @@ class ViewController: UIViewController {
     
     
     func promptForUnlockCode() {
-        let userUUID = pubnub.configuration.uuid
-        let input = UIAlertController(title: "Enter Unlock Code", message: "Unlock Code is the 4-digit number found on scooter dashboard.", preferredStyle: .alert)
-        input.addTextField()
         
-        let submitAction = UIAlertAction(title: "Unlock Now", style: .default) { [unowned input] _ in
-            self.code = input.textFields![0].text!
-            self.pubnub.publish(channel: self.channels[0], message: [self.code,userUUID]) { result in
+        if(currentCredit <= unlockCost){
+            displayAlert(title: "Insufficient Credit!", message: "Please top up your credit!")
+            
+        }
+        else{
+            let userUUID = pubnub.configuration.uuid
+            let input = UIAlertController(title: "Enter Unlock Code", message: "Unlock Code is the 4-digit number found on scooter dashboard.", preferredStyle: .alert)
+            input.addTextField()
+           
+            let submitAction = UIAlertAction(title: "Unlock Now", style: .default) { [unowned input] _ in
+               self.code = input.textFields![0].text!
+                // do something interesting with "answer" here
+              
+              
+               print("Unlock code entered:\(self.code) + handshake:\(self.handshakeAck)")
+            self.pubnub.publish(channel: self.channels[0], message: gimmeAck(name: userUUID, unlockCodeGiven: self.code, askingForAck: true)) { result in
                      print(result.map { "Publish Response at \($0.timetoken.timetokenDate)" })
                      }
-           
-            print("Unlock code entered:\(self.code) + handshake:\(self.handshakeAck)")
-            self.checkForHandshake()
-            //Unlock code entered:<_UIAlertControllerTextField: 0x7fd8f2864400; frame = (7 6.5; 225 17.5); text = '1234'; opaque = NO; gestureRecognizers = <NSArray: 0x60000088e130>; layer = <CALayer: 0x600000748440>>
-            // do something interesting with "answer" here
+               self.checkForHandshake()
+               //Unlock code entered:<_UIAlertControllerTextField: 0x7fd8f2864400; frame = (7 6.5; 225 17.5); text = '1234'; opaque = NO; gestureRecognizers = <NSArray: 0x60000088e130>; layer = <CALayer: 0x600000748440>>
+           }
+            
+
+           input.addAction(submitAction)
+           present(input, animated: true)
+         
+            
         }
-
-        input.addAction(submitAction)
-
-        present(input, animated: true)
+       
     }
     
     
@@ -582,6 +669,8 @@ private extension MKMapView {
       latitudinalMeters: regionRadius,
       longitudinalMeters: regionRadius)
     setRegion(coordinateRegion, animated: true)
+    
+
   }
 }
 
