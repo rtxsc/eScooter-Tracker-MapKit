@@ -60,5 +60,11 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Let me know your location please!</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Always need to know your location!</string>
+	<key>NSCameraUsageDescription</key>
+	<string>QR Scanner requires access to camera!</string>
 </dict>
 </plist>

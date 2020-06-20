@@ -204,11 +204,11 @@ class QRScanViewController: UIViewController,AVCaptureMetadataOutputObjectsDeleg
     }
 
     func found(code: String) {
-        print(code)
+        print("QR scan result:\(code)")
     }
 
     override var prefersStatusBarHidden: Bool {
-        return true
+        return false // default to true
     }
 
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
@@ -221,14 +221,12 @@ class QRScanViewController: UIViewController,AVCaptureMetadataOutputObjectsDeleg
     }
     
     @IBAction func unlockNow(){
-     
         tries += 1
         print("\n\nTries:\(tries)\nTrying to unlock the scooter with current eWallet amount\n")
         print("RM \(currentWalletAmount)")
-        
         self.pubnub?.publish(channel: self.channels[0], message: currentWalletAmount ) { result in
-                           print(result.map { "Publish Response at \($0.timetoken.timetokenDate)" })
-                           }
+        print(result.map { "Publish Response at \($0.timetoken.timetokenDate)" })
+        }
      }
     
     @IBAction func close(){

@@ -9,6 +9,7 @@
 import UIKit
 import MapKit
 import PubNub
+import CoreLocation
 
 public struct HereNowPayload: Codable {
   public let totalOccupancy: Int
@@ -44,16 +45,14 @@ struct gimmeAck: Codable,JSONCodable{
     var askingForAck: Bool
 }
 
-
-
-class ViewController: UIViewController {
+class ViewController: UIViewController, CLLocationManagerDelegate {
     
+    private var locationManager = CLLocationManager()
+
     var pubnub: PubNub!
     let channels = ["robotronix"]
     let listener = SubscriptionListener(queue: .main)
     
-  
-   
     var unlockCost: Double = 2.0 // unlocking requires RM2 in eWallet
     var currentCredit: Double = 0.0
     var minimumCredit: Double = 0.0
@@ -91,96 +90,88 @@ class ViewController: UIViewController {
     @IBOutlet weak var scooterInUseLabel: UILabel!
     @IBOutlet weak var waitForAckLabel: UILabel!
     @IBOutlet weak var distanceToClientLabel: UILabel!
-    
-    fileprivate let locationManager:CLLocationManager = CLLocationManager()
-       
-       private let marker1 = MKPointAnnotation()
-       private let marker2 = MKPointAnnotation()
-       
+    @IBOutlet weak var userCoordinateLabel: UILabel!
+        
+    private let marker1 = MKPointAnnotation()
+    private let marker2 = MKPointAnnotation()
+    private let marker3 = MKPointAnnotation()
     // dummy user location far 1.582892,110.387988
     // dummy user location near 1.583263,110.388561
+
+    var userLat = 0.0
+    var userLon = 0.0
     
-    //110.388512,1.583246
-       var lat = 1.583246
-       var lon = 110.388512
-        var s1_lat = 0.0
-        var s1_lon = 0.0
+    var s1_lat = 0.0
+    var s1_lon = 0.0
+    var s2_lat = 0.0
+    var s2_lon = 0.0
+    var s3_lat = 0.0
+    var s3_lon = 0.0
         
-        var coordinate: Array<Float> = Array()
-       var shift_lat = 0.0 // running latitude
-       var shift_lon = 0.0 // running longitude
-       var radius = 0.001 // rotation radius
-    
-       var tick: Double! = 0.0
-       var ticker: Double! = 0.0
+    var coordinate: Array<Float> = Array()
+    var shift_lat = 0.0 // running latitude
+    var shift_lon = 0.0 // running longitude
+    var radius = 0.0005 // rotation radius
 
-       var shift: Double! = 0.0
-       var initialLocation: CLLocation!
-  
-    var user = userPayload(name: "iPhone SE(2020)", currentCredit: 0.0, userActivation: false, u_act_from_API: "u_act_0", forceStop: false, startRiding: nil, stopRiding: nil, description: nil)
-    
+    var tick: Double! = 0.0
+    var ticker: Double! = 0.0
+
+    var shift: Double! = 0.0
+    var currentLocation: CLLocation!
+    var user = userPayload(name:"Anonymous" , currentCredit: 0.0, userActivation: false, u_act_from_API: "u_act_0", forceStop: false, startRiding: nil, stopRiding: nil, description: nil)
+         
+ 
     override func viewDidLoad() {
+        if #available(iOS 13.0, *) {
+            self.overrideUserInterfaceStyle = .dark
+            }
+        
         super.viewDidLoad()
-        rideNowButton.isHidden = true
-        let encoder = JSONEncoder()
-        user.name = "Yazid"
-        encoder.outputFormatting = .prettyPrinted
-
-        stopRidingButton.isHidden = true
-        startListeningToChannel()
         // Do any additional setup after loading the view.
+      
+
+        getUserLocation()
+        startListeningToChannel()
+        rideNowButton.isHidden = true
+        stopRidingButton.isHidden = true
+
         let roundedValue = slider.value.rounded()
         currentCredit = Double(roundedValue)
         
-        if #available(iOS 13.0, *) {
-        self.overrideUserInterfaceStyle = .dark
-        }
-        
-        mapView.delegate = self
+    
+        var newPosition1 = CLLocationCoordinate2D(latitude: userLat, longitude: userLon)
+        var newPosition2 = CLLocationCoordinate2D(latitude: userLat, longitude: userLon)
+        var newPosition3 = CLLocationCoordinate2D(latitude: userLat, longitude: userLon)
 
-       locationManager.requestWhenInUseAuthorization()
-       locationManager.desiredAccuracy = kCLLocationAccuracyBest
-       locationManager.distanceFilter = kCLDistanceFilterNone
-       locationManager.startUpdatingLocation()
-       
-       mapView.showsUserLocation = true
-       // Set initial location
-       initialLocation = CLLocation(latitude: lat, longitude: lon)
-       mapView.centerToLocation(initialLocation)
-       
-       let roi = CLLocation(latitude: lat, longitude: lon)
-       let region = MKCoordinateRegion(
-         center: roi.coordinate,
-         latitudinalMeters: 50000,
-         longitudinalMeters: 60000)
-       mapView.setCameraBoundary(
-         MKMapView.CameraBoundary(coordinateRegion: region),
-         animated: true)
-       
-       let zoomRange = MKMapView.CameraZoomRange(maxCenterCoordinateDistance: 200000)
-       mapView.setCameraZoomRange(zoomRange, animated: true)
-       
-       var newPosition1 = CLLocationCoordinate2D(latitude: lat, longitude: lon)
-       var newPosition2 = CLLocationCoordinate2D(latitude: lat, longitude: lon)
-       
-       // Add annotation to map.
-       marker1.title = "sc1"
-       marker1.coordinate = initialLocation.coordinate
-       marker2.title = "sc2"
-       marker2.coordinate = initialLocation.coordinate
-     
-      mapView.addAnnotation(marker1)
-      mapView.addAnnotation(marker2)
-       
+        // Add annotation to map.
+            
+        currentLocation = CLLocation(latitude: userLat, longitude: userLon)
+        marker1.title = "client-s1"
+        marker1.coordinate = currentLocation.coordinate
+        marker2.title = "client-s2"
+        marker2.coordinate = currentLocation.coordinate
+        marker3.title = "client-s3"
+        marker2.coordinate = currentLocation.coordinate
+        mapView.addAnnotation(marker1)
+        mapView.addAnnotation(marker2)
+        mapView.addAnnotation(marker3)
+
          // Show artwork on map
          let label = PopUpLabel(
            title: "User",
-           locationName: "eScooter HQ",
-           discipline: "Building",
-           coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lon))
+           locationName: "Anonymous User",
+           discipline: "User",
+           coordinate: CLLocationCoordinate2D(latitude: userLat, longitude: userLon))
        mapView.addAnnotation(label)
-   
-     
+        
+        let labelmarker3 = PopUpLabel(
+                             title: "sc3",
+                             locationName: "\(self.marker3.coordinate.latitude), \(self.marker3.coordinate.longitude)",
+                             discipline: "Vehicle",
+                             coordinate: currentLocation.coordinate)
+
+        self.mapView.addAnnotation(labelmarker3)
+
 /*
          let labelmarker1 = PopUpLabel(
                             title: "sc1",
@@ -193,11 +184,11 @@ class ViewController: UIViewController {
                       title: "sc2",
                       locationName: "\(self.marker2.coordinate.latitude), \(self.marker2.coordinate.longitude)",
                       discipline: "Vehicle",
-                      coordinate: initialLocation.coordinate)
+                      coordinate: currentLocation.coordinate)
 
         self.mapView.addAnnotation(labelmarker1)
         self.mapView.addAnnotation(labelmarker2)
-         */
+*/
         // Set timer of 5 seconds before beginning the animation.
       weak var timer: Timer?
       
@@ -211,30 +202,67 @@ class ViewController: UIViewController {
         UIView.animate(withDuration: 5, animations: {
 
         // update new coordinates every 5 seconds (get real-time coordinate from payload)
-//        newPosition1 = CLLocationCoordinate2D(latitude: self!.lat + self!.shift_lat, longitude: self!.lon + self!.shift_lon)
-//        newPosition2 = CLLocationCoordinate2D(latitude: self!.lat - self!.shift_lat, longitude: self!.lon - self!.shift_lon)
+        newPosition1 = CLLocationCoordinate2D(latitude: self!.s1_lat , longitude: self!.s1_lon)
+        newPosition2 = CLLocationCoordinate2D(latitude: self!.s2_lat, longitude: self!.s2_lon - self!.shift_lon)
+        newPosition3 = CLLocationCoordinate2D(latitude: self!.userLat - self!.shift_lat, longitude: self!.userLon - self!.shift_lon)
             
-            newPosition1 = CLLocationCoordinate2D(latitude: self!.s1_lat , longitude: self!.s1_lon)
-            newPosition2 = CLLocationCoordinate2D(latitude: self!.lat - self!.shift_lat, longitude: self!.lon - self!.shift_lon)
-            
-
 //        labelmarker1.coordinate = newPosition1
 //        labelmarker2.coordinate = newPosition2
 
         // Update annotation coordinate to be the destination coordinate
-        self?.marker1.title = "sc1"
+        self?.marker1.title = "client-s1"
         self?.marker1.subtitle = "\(self!.marker1.coordinate.latitude), \(self!.marker1.coordinate.longitude)"
-        self?.marker2.title = "sc2"
+        self?.marker2.title = "client-s2"
         self?.marker2.subtitle = "\(self!.marker2.coordinate.latitude), \(self!.marker2.coordinate.longitude)"
+        self?.marker3.title = "client-s3"
+        self?.marker3.subtitle = "\(self!.marker3.coordinate.latitude), \(self!.marker3.coordinate.longitude)"
         self?.marker1.coordinate = newPosition1
         self?.marker2.coordinate = newPosition2
-            
+        self?.marker3.coordinate = newPosition3
               }, completion: nil)
           }
       }
       // Start moving annotations every 5 seconds
       updatePosition()
     } // end of viewDidLoad
+    
+    func getUserLocation(){
+        locationManager = CLLocationManager()
+        locationManager.requestAlwaysAuthorization()
+        locationManager.startUpdatingLocation()
+        locationManager.requestWhenInUseAuthorization()
+        locationManager.desiredAccuracy = kCLLocationAccuracyBest
+        locationManager.distanceFilter = kCLDistanceFilterNone
+        print("Getting location from GPS!")
+        locationManager.delegate = self
+    }
+    func locationManager(_ manager: CLLocationManager,didUpdateLocations locations: [CLLocation]){
+        if let location = locations.last {
+            userLat = location.coordinate.latitude
+            userLon = location.coordinate.longitude
+            let formattedLat = String(format: "%.4f", userLat)
+            let formattedLon = String(format: "%.4f", userLon)
+            userCoordinateLabel.text = "\(formattedLat), \(formattedLon)"
+        }
+       
+        currentLocation = CLLocation(latitude: userLat, longitude: userLon)
+        
+        let roi = CLLocation(latitude: userLat, longitude: userLon)
+        let region = MKCoordinateRegion(
+          center: roi.coordinate,
+          latitudinalMeters: 50000,
+          longitudinalMeters: 60000)
+        mapView.setCameraBoundary(
+          MKMapView.CameraBoundary(coordinateRegion: region),
+          animated: true)
+        
+        let zoomRange = MKMapView.CameraZoomRange(maxCenterCoordinateDistance: 200000)
+        mapView.setCameraZoomRange(zoomRange, animated: true)
+        mapView.delegate = self
+        mapView.showsUserLocation = true // enable pulsing blue dot
+        mapView.centerToLocation(currentLocation)
+
+    }
     
 
     func startListeningToChannel(){
@@ -266,45 +294,12 @@ class ViewController: UIViewController {
 
         }// close listener
         
-//        listener.didReceivePresence = { event in
-//                print("Channel `\(event.channel)` has occupancy of \(event.occupancy)")
-//                print("User(s) Joined: \(event.join)")
-//                print("User(s) Left: \(event.leave)")
-//                print("User(s) Timedout: \(event.timeout)")
-//        }
-//          listener.didReceiveStatus = { status in
-//            switch status {
-//            case .success(let connection):
-//              if connection == .connected {
-//                self.pubnub.publish(channel: self.channels[0], message: "Hello from \(self.pubnub.configuration.uuid)") { result in
-//                  switch result {
-//                  case .success(_):
-//                    print(result.map {"TOMOT DONE THE job at \($0.timetoken.timetokenDate)"})
-//                  case .failure(_):
-//                    print("Oh-ohh")
-//                  }
-//                }
-//              }
-//            case .failure(let error):
-//              print("Status Error: \(error.localizedDescription)")
-//            }
-//          }
           pubnub.add(listener)
           pubnub.subscribe(to: channels,
                         withPresence: true)
-        
-//        pubnub.hereNow(on: channels,
-//                            includeUUIDs: false,
-//                         also: true) { result in
-//                         switch result {
-//                         case let .success(response):
-//                           print("Successful hereNow Response: \(response)")
-//                         case let .failure(error):
-//                           print("Failed hereNow Response: \(error.localizedDescription)")
-//                         }
-//                       }
-     
-    }
+             
+    } //  end of startListeningToChannel()
+    
        // timer function to calculate lat/lon shift value
        @objc func timerAction(){
            tick += 1
@@ -481,13 +476,11 @@ class ViewController: UIViewController {
          return stop
      }
 
-    
     @IBAction func relocateUser(){
-        print("Relocating user...\n")
-        mapView.centerToLocation(initialLocation)
+        print("Relocating user to \(String(describing: currentLocation))\n")
+        mapView.centerToLocation(currentLocation)
 
     }
-        
 
     @IBAction func sliderMoved(_ slider: UISlider){
         let roundedValue = slider.value.rounded()
@@ -537,20 +530,22 @@ class ViewController: UIViewController {
     func checkForHandshake(){
         
         if(code == "5347"){
-            print("user location:\(self.lat) , \(self.lon)")
+            print("user location:\(self.userLat) , \(self.userLon)")
             print("client location:\(self.s1_lat) , \(self.s1_lon)")
 
-            let user_location = CLLocation(latitude:self.lat, longitude:self.lon)
+            let user_location = CLLocation(latitude:self.userLat, longitude:self.userLon)
             let client_location = CLLocation(latitude:self.s1_lat, longitude:self.s1_lon)
             
-            let user_marker = CLLocationCoordinate2D(latitude: CLLocationDegrees(exactly: self.lat)!, longitude: CLLocationDegrees(exactly: self.lon)!)
+            let user_marker = CLLocationCoordinate2D(latitude: CLLocationDegrees(exactly: self.userLat)!, longitude: CLLocationDegrees(exactly: self.userLon)!)
             let client_marker = CLLocationCoordinate2D(latitude: CLLocationDegrees(exactly: self.s1_lat)!, longitude: CLLocationDegrees(exactly: self.s1_lon)!)
             let distance = user_location.distance(from: client_location)
             self.distanceToClientLabel.text = String(distance.rounded())+" m"
             print("you are \(distance.rounded()) meter away from the client")
             
-            if(distance >= 5.0){
+            if(distance >= 10.0){
                 self.getDirections(loc1: user_marker, loc2: client_marker)
+//                self.rideNowButton.isHidden = false
+
                 let msg = "You are too far from the scooter\n\nYou must be within 2 meter away from scooter to unlock"
                 displayAlert(title:"Cannot Unlock!",message:msg)
             }
@@ -558,6 +553,7 @@ class ViewController: UIViewController {
                 
                 let msg = "Waiting for scooter response."
                 displayAlert(title:"Unlock Successful!",message:msg)
+                self.rideNowButton.isHidden = false
 
                 // allow user to unlock scooter if distance less than 2 meter
                 self.pubnub.publish(channel: self.channels[0], message: [code,scooterUUID]) { result in
@@ -674,3 +670,15 @@ private extension MKMapView {
   }
 }
 
+//extension GeolocationService: CLLocationManagerDelegate {
+//    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+//        if let location = locations.last {
+//            let geoLocation = GeoLocation(userLatitude: location.coordinate.latitude, userLongitude: location.coordinate.longitude)
+//            delegate.didFetchCurrentLocation(geoLocation)
+//        }
+//    }
+//
+//    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+//        delegate.fetchCurrentLocationFailed(error: error)
+//    }
+//}
